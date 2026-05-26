@@ -31,6 +31,22 @@ export class CancelAppointmentUseCase {
 
     await this.appointmentRepository.save(appointment);
 
+    // Audit: record cancellation
+    try {
+      const { prismaAuditService } = await import('@infrastructure/persistence/prisma/prisma-audit-service.js');
+      await prismaAuditService.log({
+        tenantId,
+        userId: 'system',
+        action: 'appointment.cancelled',
+        entity: 'Appointment',
+        entityId: appointment.id,
+        payload: { appointmentId: appointment.id },
+      });
+    } catch (e) {
+      // Non-blocking: audit failure should not break business flow
+      console.warn('Audit log failed', e);
+    }
+
     appointment.domainEvents.forEach(event => DomainEvents.dispatch(event));
     appointment.clearEvents();
   }

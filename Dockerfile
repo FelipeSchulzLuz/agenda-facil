@@ -22,5 +22,7 @@ COPY --from=builder /app/prisma.config.js ./prisma.config.js
 COPY --from=builder /app/prisma/migrations ./prisma/migrations
 
 EXPOSE 3000
+HEALTHCHECK --interval=15s --timeout=3s --start-period=5s --retries=3 \
+	CMD wget -qO- http://localhost:3000/healthz || exit 1
 
 CMD ["npm", "run", "start"]

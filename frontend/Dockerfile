@@ -21,4 +21,7 @@ COPY --from=builder /app/public ./public
 
 EXPOSE 3001
 
+HEALTHCHECK --interval=15s --timeout=3s --start-period=5s --retries=3 \
+	CMD wget -qO- http://localhost:3001/healthz || exit 1
+
 CMD ["npm", "run", "start"]

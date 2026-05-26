@@ -7,6 +7,11 @@ const app = express();
 
 app.use(express.json());
 
+// Health endpoint for readiness and liveness
+app.get('/healthz', (_req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
 // Apply tenant middleware to all /api routes
 app.use('/api', tenantMiddleware);
 

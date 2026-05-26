@@ -6,6 +6,7 @@ import { AvailabilityService } from '@domain/scheduling/availability-service.js'
 import { DateRange } from '@domain/scheduling/value-objects/date-range.js';
 import { DomainEvents } from '@domain/core/events/domain-events.js';
 import { TenantId } from '@domain/core/tenant-id.js';
+import { prismaAuditService } from '@infrastructure/persistence/prisma/prisma-audit-service.js';
 
 export interface CreateAppointmentInput {
   tenantId: string;
@@ -77,6 +78,16 @@ export class CreateAppointmentUseCase {
     );
 
     await this.appointmentRepository.save(appointment);
+
+    // Audit: record creation
+    await prismaAuditService.log({
+      tenantId,
+      userId: 'system',
+      action: 'appointment.created',
+      entity: 'Appointment',
+      entityId: appointment.id,
+      payload: { appointment: { id: appointment.id, professionalId: appointment.professionalId } },
+    });
 
     // 5. Dispatch Events
     appointment.domainEvents.forEach(event => DomainEvents.dispatch(event));

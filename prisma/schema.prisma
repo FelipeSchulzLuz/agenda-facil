@@ -126,3 +126,19 @@ model WalletEntry {
 
   @@map("wallet_entries")
 }
+
+model AuditLog {
+  id            String   @id @default(uuid())
+  tenantId      String
+  userId        String
+  action        String
+  entity        String
+  entityId      String
+  payload       Json
+  correlationId String
+  createdAt     DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@map("audit_logs")
+}

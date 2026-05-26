@@ -8,6 +8,11 @@ services:
     depends_on:
       - postgres
       - redis
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/healthz || exit 1"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
 
   frontend:
     build: 
@@ -18,6 +23,11 @@ services:
       NEXT_PUBLIC_API_URL: /api
     depends_on:
       - app
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3001/healthz || exit 1"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
 
   nginx:
     image: nginx:alpine
@@ -39,10 +49,20 @@ services:
       POSTGRES_DB: agenda_facil
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d agenda_facil -h localhost || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
     container_name: agenda_facil_redis
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep -q PONG || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
 
 volumes:
   postgres_data:
