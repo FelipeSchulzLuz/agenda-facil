@@ -1,0 +1,128 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Tenant {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  professionals Professional[]
+  appointments  Appointment[]
+  customers     Customer[]
+  services      Service[]
+  charges       Charge[]
+  walletEntries WalletEntry[]
+
+  @@map("tenants")
+}
+
+model Professional {
+  id        String   @id @default(uuid())
+  tenantId  String
+  name      String
+  workingDays Json   
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  appointments Appointment[]
+
+  @@map("professionals")
+}
+
+model Customer {
+  id        String   @id @default(uuid())
+  tenantId  String
+  name      String
+  phone     String
+  email     String?
+  cpf       String?
+  isBlocked Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  appointments Appointment[]
+  charges      Charge[]
+  walletEntries WalletEntry[]
+
+  @@map("customers")
+}
+
+model Service {
+  id                String   @id @default(uuid())
+  tenantId          String
+  name              String
+  durationInMinutes Int
+  priceInCents      Int
+  bufferInMinutes   Int      @default(0)
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  appointments Appointment[]
+
+  @@map("services")
+}
+
+model Appointment {
+  id             String   @id @default(uuid())
+  tenantId       String
+  professionalId String
+  customerId     String
+  serviceId      String
+  startTime      DateTime
+  endTime        DateTime
+  status         String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  tenant       Tenant       @relation(fields: [tenantId], references: [id])
+  professional Professional @relation(fields: [professionalId], references: [id])
+  customer     Customer     @relation(fields: [customerId], references: [id])
+  service      Service      @relation(fields: [serviceId], references: [id])
+  charge       Charge?
+
+  @@map("appointments")
+}
+
+model Charge {
+  id             String   @id @default(uuid())
+  tenantId       String
+  customerId     String
+  appointmentId  String   @unique
+  amountInCents  Int
+  status         String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  tenant       Tenant      @relation(fields: [tenantId], references: [id])
+  customer     Customer    @relation(fields: [customerId], references: [id])
+  appointment  Appointment @relation(fields: [appointmentId], references: [id])
+
+  @@map("charges")
+}
+
+model WalletEntry {
+  id             String   @id @default(uuid())
+  tenantId       String
+  customerId     String
+  amountInCents  Int
+  type           String
+  description    String
+  relatedChargeId String?
+  createdAt      DateTime @default(now())
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id])
+  customer Customer @relation(fields: [customerId], references: [id])
+
+  @@map("wallet_entries")
+}

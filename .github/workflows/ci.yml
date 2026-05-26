@@ -1,0 +1,47 @@
+name: CI - Agenda Fácil
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Lint check
+      run: npx eslint .
+
+    - name: Type check
+      run: npx tsc --noEmit
+
+    - name: Run tests
+      run: npm test
+
+  deploy:
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+    - name: Deploy to Production
+      run: |
+        echo "Starting deployment to production environment..."
+        # In a real scenario, this would involve:
+        # 1. SSH into the server or update a container service (e.g. AWS ECS/DigitalOcean App Platform)
+        # 2. Running migrations: npx prisma migrate deploy
+        # 3. Reloading Nginx: sudo service nginx reload
+        echo "Deploy complete for SHA ${{ github.sha }}"
+

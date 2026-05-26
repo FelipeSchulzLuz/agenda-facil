@@ -1,0 +1,10 @@
+import { DomainEvent } from '../../core/events/domain-events.js';
+import { Appointment } from '../appointment.js';
+
+export class AppointmentCancelled implements DomainEvent {
+  public readonly occurredOn: Date;
+
+  constructor(public readonly appointment: Appointment) {
+    this.occurredOn = new Date();
+  }
+}

@@ -1,0 +1,64 @@
+-- Initial migration baseline created from schema
+CREATE SCHEMA IF NOT EXISTS "public";
+
+CREATE TABLE IF NOT EXISTS "public"."appointments" (
+    "id" TEXT NOT NULL DEFAULT (gen_random_uuid())::text,
+    "tenant_id" TEXT,
+    "professional_id" TEXT,
+    "customer_id" TEXT,
+    "service_id" TEXT,
+    "start_time" TIMESTAMPTZ(6),
+    "end_time" TIMESTAMPTZ(6),
+    "status" TEXT,
+    "created_at" TIMESTAMPTZ(6) DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMPTZ(6) DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "appointments_pkey" PRIMARY KEY ("id")
+);
+
+CREATE TABLE IF NOT EXISTS "public"."professionals" (
+    "id" TEXT NOT NULL DEFAULT (gen_random_uuid())::text,
+    "tenant_id" TEXT,
+    "name" TEXT,
+    "working_days" JSONB,
+    "created_at" TIMESTAMPTZ(6) DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMPTZ(6) DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "professionals_pkey" PRIMARY KEY ("id")
+);
+
+CREATE TABLE IF NOT EXISTS "public"."services" (
+    "id" TEXT NOT NULL DEFAULT (gen_random_uuid())::text,
+    "tenant_id" TEXT,
+    "name" TEXT,
+    "duration_in_minutes" INTEGER,
+    "price_in_cents" INTEGER,
+    "buffer_in_minutes" INTEGER DEFAULT 0,
+    "is_active" BOOLEAN DEFAULT true,
+    "created_at" TIMESTAMPTZ(6) DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMPTZ(6) DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "services_pkey" PRIMARY KEY ("id")
+);
+
+CREATE TABLE IF NOT EXISTS "public"."tenants" (
+    "id" TEXT NOT NULL DEFAULT (gen_random_uuid())::text,
+    "name" TEXT,
+    "slug" TEXT,
+    "created_at" TIMESTAMPTZ(6) DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMPTZ(6) DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "tenants_pkey" PRIMARY KEY ("id")
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "tenants_slug_key" ON "public"."tenants"("slug" ASC);
+
+ALTER TABLE "public"."appointments" ADD CONSTRAINT IF NOT EXISTS "appointments_professional_id_fkey" FOREIGN KEY ("professional_id") REFERENCES "public"."professionals"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+ALTER TABLE "public"."appointments" ADD CONSTRAINT IF NOT EXISTS "appointments_service_id_fkey" FOREIGN KEY ("service_id") REFERENCES "public"."services"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+ALTER TABLE "public"."appointments" ADD CONSTRAINT IF NOT EXISTS "appointments_tenant_id_fkey" FOREIGN KEY ("tenant_id") REFERENCES "public"."tenants"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+ALTER TABLE "public"."professionals" ADD CONSTRAINT IF NOT EXISTS "professionals_tenant_id_fkey" FOREIGN KEY ("tenant_id") REFERENCES "public"."tenants"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+ALTER TABLE "public"."services" ADD CONSTRAINT IF NOT EXISTS "services_tenant_id_fkey" FOREIGN KEY ("tenant_id") REFERENCES "public"."tenants"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
