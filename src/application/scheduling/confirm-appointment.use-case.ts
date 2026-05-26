@@ -4,6 +4,7 @@ import { ChargeRepository } from '@domain/billing/charge-repository.js';
 import { Charge } from '@domain/billing/charge.js';
 import { DomainEvents } from '@domain/core/events/domain-events.js';
 import { TenantId } from '@domain/core/tenant-id.js';
+import { prismaAuditService } from '@infrastructure/persistence/prisma/prisma-audit-service.js';
 
 export interface ConfirmAppointmentInput {
   tenantId: string;
@@ -43,6 +44,31 @@ export class ConfirmAppointmentUseCase {
     // 5. Save everything (In a real UoW, this would be a single transaction)
     await this.appointmentRepository.save(appointment);
     await this.chargeRepository.save(charge);
+
+    // Audit: non-blocking logs for appointment confirmation and charge creation
+    (async () => {
+      try {
+        await prismaAuditService.log({
+          tenantId,
+          userId: 'system',
+          action: 'appointment.confirmed',
+          entity: 'Appointment',
+          entityId: appointment.id,
+          payload: { appointmentId: appointment.id },
+        });
+
+        await prismaAuditService.log({
+          tenantId,
+          userId: 'system',
+          action: 'charge.created',
+          entity: 'Charge',
+          entityId: charge.id,
+          payload: { amountInCents: charge.amountInCents },
+        });
+      } catch (e) {
+        console.warn('Audit logging failed', e);
+      }
+    })();
 
     // 6. Dispatch Events
     appointment.domainEvents.forEach(event => DomainEvents.dispatch(event));

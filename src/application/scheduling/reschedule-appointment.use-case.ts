@@ -4,6 +4,7 @@ import { AvailabilityService } from '@domain/scheduling/availability-service.js'
 import { DateRange } from '@domain/scheduling/value-objects/date-range.js';
 import { DomainEvents } from '@domain/core/events/domain-events.js';
 import { TenantId } from '@domain/core/tenant-id.js';
+import { prismaAuditService } from '@infrastructure/persistence/prisma/prisma-audit-service.js';
 
 export interface RescheduleAppointmentInput {
   tenantId: string;
@@ -55,5 +56,21 @@ export class RescheduleAppointmentUseCase {
 
     appointment.domainEvents.forEach(event => DomainEvents.dispatch(event));
     appointment.clearEvents();
+
+    // Audit: non-blocking
+    (async () => {
+      try {
+        await prismaAuditService.log({
+          tenantId,
+          userId: 'system',
+          action: 'appointment.rescheduled',
+          entity: 'Appointment',
+          entityId: appointment.id,
+          payload: { newStartTime: input.newStartTime, newEndTime: input.newEndTime },
+        });
+      } catch (e) {
+        console.warn('Audit logging failed', e);
+      }
+    })();
   }
 }
